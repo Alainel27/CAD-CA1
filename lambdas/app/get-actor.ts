@@ -12,11 +12,11 @@ import {
 import { response } from "../shared/http";
 import { logRequest } from "../shared/request-logger";
 
+//GET actor handler
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-
     logRequest(event);
 
     const actorId = parseId(event.pathParameters?.actorID);
@@ -50,7 +50,7 @@ export const handler = async (
     const roleResult = await ddb.send(
       new GetCommand({
         TableName: tableName,
-        Key: { PK: movieKey(movieId!), SK: actorKey(actorId) },
+        Key: { PK: movieKey(movieId), SK: actorKey(actorId) },
       })
     );
 
@@ -58,8 +58,8 @@ export const handler = async (
       return response(200, { data: actor });
     }
 
-    const { roleName, roleDescription} = toRole(roleResult.Item);
-    return response(200, { data: { ...actor, roleName, roleDescription } });
+    const { roleName, roleDescription } = toRole(roleResult.Item);
+    return response(200, { data: {...actor, roleName, roleDescription} });
 
   } catch (err) {
     console.error("DynamoDB error:", err);
