@@ -1,9 +1,9 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
-import { 
-  actorKey, 
-  ddb, 
-  movieKey, 
+import {
+  actorKey,
+  ddb,
+  movieKey,
   parseId,
   type Role,
   tableName
@@ -15,65 +15,65 @@ export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
-  const body = parseJsonObject(event);
-  if (isResponse(body)) return body;
+    const body = parseJsonObject(event);
+    if (isResponse(body)) return body;
 
-  const movieId = parseId(String(body.movieId));
-  const actorId = parseId(String(body.actorId));
-  if (movieId === undefined || actorId === undefined) {
-    return response(400, { message: "movieId and actorId must be positive integers" });
-  }
+    const movieId = parseId(String(body.movieId));
+    const actorId = parseId(String(body.actorId));
+    if (movieId === undefined || actorId === undefined) {
+      return response(400, { message: "movieId and actorId must be positive integers" });
+    }
 
-  const { roleName, roleDescription } = body;
-  if (typeof roleName !== "string" || roleName.trim() === "" ||
-   typeof roleDescription !== "string" ||roleDescription.trim() === "") {
-    return response(400, { message: "roleName and roleDescription must be strings" });
-  }
+    const { roleName, roleDescription } = body;
+    if (typeof roleName !== "string" || roleName.trim() === "" ||
+      typeof roleDescription !== "string" || roleDescription.trim() === "") {
+      return response(400, { message: "roleName and roleDescription must be strings" });
+    }
 
-  const role: Role = {
-    movieId,
-    actorId,
-    roleName,
-    roleDescription
-  };
+    const role: Role = {
+      movieId,
+      actorId,
+      roleName,
+      roleDescription
+    };
 
-  await ddb.send(
-    new TransactWriteCommand({
-      TransactItems: [
-        {
-          ConditionCheck: {
-            TableName: tableName,
-            Key: {
-              PK: movieKey(movieId),
-              SK: movieKey(movieId)
+    await ddb.send(
+      new TransactWriteCommand({
+        TransactItems: [
+          {
+            ConditionCheck: {
+              TableName: tableName,
+              Key: {
+                PK: movieKey(movieId),
+                SK: movieKey(movieId)
+              },
+              ConditionExpression: "attribute_exists(PK)",
             },
-            ConditionExpression: "attribute_exists(PK)",
-        },
-      },
-      {
-        ConditionCheck: {
-          TableName: tableName,
-          Key: {
-            PK: actorKey(actorId),
-            SK: actorKey(actorId)
           },
-          ConditionExpression: "attribute_exists(PK)",
-      },
-    },
-      {
-        Put: {
-          TableName: tableName,
-          Item: {
-            PK: movieKey(movieId),
-            SK: actorKey(actorId),
-            ...role
+          {
+            ConditionCheck: {
+              TableName: tableName,
+              Key: {
+                PK: actorKey(actorId),
+                SK: actorKey(actorId)
+              },
+              ConditionExpression: "attribute_exists(PK)",
+            },
           },
-          ConditionExpression: "attribute_not_exists(PK)",
-        },
-      },
-    ],
-  })
-);
+          {
+            Put: {
+              TableName: tableName,
+              Item: {
+                PK: movieKey(movieId),
+                SK: actorKey(actorId),
+                ...role
+              },
+              ConditionExpression: "attribute_not_exists(PK)",
+            },
+          },
+        ],
+      })
+    );
 
     return response(201, { message: "Role added", data: role });
   } catch (err) {
