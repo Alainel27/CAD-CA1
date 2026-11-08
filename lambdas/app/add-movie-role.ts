@@ -11,6 +11,7 @@ import {
 import { isResponse, parseJsonObject, response } from "../shared/http";
 import { TransactionCanceledException } from "@aws-sdk/client-dynamodb";
 
+//POST add movie role handler
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
